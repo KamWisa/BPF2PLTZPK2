@@ -1,0 +1,130 @@
+&ACCESS  RVO
+&COMMENT PLC on control
+DEF  SPS ( )
+  ;FOLD DECLARATIONS
+  ;FOLD BASISTECH DECL
+  ;Automatik extern
+  DECL STATE_T STAT
+  DECL MODUS_T MODE
+  ;ENDFOLD (BASISTECH DECL)
+  ;FOLD USER DECL
+  ; Please insert user defined declarations
+     ; $TIMER[1] = -4000 ; 2min 
+     ; $TIMER_STOP[1] = False ; start timer incrementing
+  ;ENDFOLD (USER DECL)
+  ;ENDFOLD (DECLARATIONS)
+  ;FOLD INI
+  ;FOLD AUTOEXT INIT
+  INTERRUPT DECL 91 WHEN $PRO_STATE1==#P_FREE DO RESET_OUT ()
+  INTERRUPT ON 91
+  $LOOP_MSG[]="                                                            "
+  MODE=#SYNC
+  $H_POS=$H_POS
+  ;Automatik extern
+  IF $MODE_OP==#EX THEN
+    ;CWRITE($CMD,STAT,MODE,"CANCLE")
+    CWRITE($CMD,STAT,MODE,"RUN /R1/mainsub()")
+  ENDIF
+  ;ENDFOLD (AUTOEXT INIT)
+  ;FOLD BACKUPMANAGER PLC INIT
+  BM_ENABLED = FALSE
+  BM_OUTPUTVALUE = 0
+  ;ENDFOLD (BACKUPMANAGER PLC INIT)
+  ;FOLD TQM_INIT
+    TorqueDefinitions()
+  ;ENDFOLD (TQM_INIT)
+  ;FOLD USER INIT
+  ; Please insert user defined initialization commands
+
+  ;ENDFOLD (USER INIT)
+  ;ENDFOLD (INI)
+
+  LOOP
+    WAIT FOR NOT($POWER_FAIL)
+    TORQUE_MONITORING()
+    ;FOLD BACKUPMANAGER PLC
+    IF BM_ENABLED THEN
+      BM_OUTPUTSIGNAL = BM_OUTPUTVALUE
+    ENDIF
+    ;ENDFOLD (BACKUPMANAGER PLC)
+;FOLD GRIPPERTECH PLC;%{E}%MKUKATPGRP,%CSPS,%VSPS,%P
+  IF (ZANGEN_FUNKT>0) THEN
+    H50 (5,AKT_ZANGE,DUMMY,GDEFAULT )
+    ZANGEN_FUNKT=0
+  ENDIF
+;ENDFOLD (GRIPPERTECH PLC)
+    ;FOLD USER PLC
+    ;Make your modifications here
+      IF ($IN[9] == TRUE) AND (TrgSpsLft == FALSE) THEN
+         TrgSpsLft = TRUE
+      ENDIF
+      IF ($IN[21] == TRUE) AND (TrgSpsRgh == FALSE) THEN
+         TrgSpsRgh = TRUE
+      ENDIF
+   INT_NoPalLef = NoPalLef B_AND 'H7FFF'
+   INT_NoPalRgh = NoPalRgh B_AND 'H7FFF'
+   INT_PLCRobSpd = PLCRobSpd B_AND 'H7FFF'
+   EopSckNoLft = CountLeft
+   EopSckNoRgh = CountRight
+   
+   MonRunTim = ($ROBRUNTIME)/60
+   IF $IN[8] == TRUE THEN
+      fSckRdy = TRUE
+   ElSE
+      fSckRdy = FALSE
+   ENDIF
+   IF $IN[10] == TRUE THEN
+      fSidOpeLft = TRUE
+   ELSE
+      fSidOpeLft = FALSE
+   ENDIF
+    IF $IN[11] == TRUE THEN
+      fSidOpeRgh = TRUE
+   ELSE
+      fSidOpeRgh = FALSE
+   ENDIF
+   ;IF $TIMER_FLAG[1] THEN
+   ;  SendData()
+   ;ENDIF 
+    
+   IF ($IN[41] == TRUE) OR (SimTMR == TRUE) THEN
+      fTMR = TRUE
+   ELSE
+      fTMR = FALSE
+   ENDIF 
+    
+    ;ENDFOLD (USER PLC)
+  ENDLOOP
+  ;FOLD ;%{H}
+  ;FOLD
+END
+  ;ENDFOLD
+
+
+DEF  RESET_OUT ( )
+  INT N
+  MsgLoop(" ")
+  IF REFLECT_PROG_NR == 1 THEN
+    FOR N = 0 TO PGNO_LENGTH - 1
+      $OUT[PGNO_FBIT_REFL + N] = FALSE
+    ENDFOR
+  ENDIF
+  IF (PGNO_REQ>0) THEN
+    $OUT[PGNO_REQ]=FALSE
+  ELSE
+    IF (PGNO_REQ<0) THEN
+      $OUT[-PGNO_REQ]=TRUE
+    ENDIF
+  ENDIF
+END
+
+;FOLD USER SUBROUTINE
+; Integrate your user defined subroutines
+DEF SendData()
+  $TIMER_STOP[1] = TRUE ; stop timer 
+  $TIMER[1] = -120000 ; 2min
+   BinaryFixed()
+  $TIMER_STOP[1] = FALSE ; start timer
+END
+;ENDFOLD (USER SUBROUTINE)
+;ENDFOLD

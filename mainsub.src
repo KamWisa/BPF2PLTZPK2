@@ -1,0 +1,177 @@
+&ACCESS RVP
+&REL 169
+&PARAM DISKPATH = KRC:\R1\Program\Palletize
+DEF MainSub ( )
+;FOLD INI
+  ;FOLD BASISTECH INI
+    GLOBAL INTERRUPT DECL 3 WHEN $STOPMESS==TRUE DO IR_STOPM ( )
+    INTERRUPT ON 3 
+    BAS (#INITMOV,0 )
+  ;ENDFOLD (BASISTECH INI)
+;FOLD SPOTTECH INI
+USERSPOT(#INIT)
+;ENDFOLD (SPOTTECH INI)
+;FOLD GRIPPERTECH INI
+USER_GRP(0,DUMMY,DUMMY,GDEFAULT)
+;ENDFOLD (GRIPPERTECH INI)
+  ;FOLD USER INI
+    ;Make your modifications here
+INTERRUPT DECL 19 WHEN $IN[9] DO ResetCountLeft()
+INTERRUPT DECL 20 WHEN $IN[21] DO ResetCountRight()
+  ;ENDFOLD (USER INI)
+;ENDFOLD (INI)
+
+InitRob()
+Loop
+;IF $IN[8] == TRUE THEN
+IF fSckRdy == TRUE THEN
+   ;FOLD Operate on Left or Line1
+   ;IF $IN[10] == TRUE THEN
+   IF fSidOpeLft == TRUE THEN 
+      TrgSpsLft = FALSE
+      ActSid = 1
+      Pattern(PatCntLft,CountLeft,fTMR)
+      fSckRdy = FALSE
+      ;Pickup()
+      MovPlcSck()
+   ENDIF
+   ;ENDFOLD      
+   ;FOLD Operate on Right or Line2
+   ;IF $IN[11] == TRUE THEN
+   IF fSidOpeRgh == TRUE THEN
+      TrgSpsRgh = FALSE
+      ActSid = 2
+      Pattern(PatCntRgh,CountRight,fTMR)
+      fSckRdy = FALSE
+      ;Pickup()
+      MovPlcSck()
+   ENDIF
+;ENDFOLD
+ENDIF
+ENDLOOP   
+END
+DEF MovPlcSck()
+   CONTINUE  
+   TRIGGER WHEN PATH=-35 DELAY= 0 DO $OUT[2]=FALSE 
+   TRIGGER WHEN PATH=-30 DELAY= 0 DO $OUT[1]=FALSE 
+   LIN PikPos
+   TRIGGER WHEN DISTANCE=0 DELAY=200 DO $OUT[3]=FALSE
+   LIN AftPikPos C_DIS C_DIS
+   PTP EscStpPos C_PTP
+   PTP EscBltPos C_PTP   
+   PTP BefDrpPos C_PTP
+   PTP DrpPos C_PTP
+   TRIGGER WHEN PATH=-5 DELAY=0 DO DrpSck() PRIO=84
+   LIN_REL {Z - 30}
+   TRIGGER WHEN DISTANCE=0 DELAY=0 DO PULSE($OUT[4],TRUE,1)
+   FlushPallet()
+   PTP AftDrpPos C_PTP
+   TRIGGER WHEN DISTANCE=0 DELAY=0 DO $OUT[2]=TRUE
+   PTP EscBltPos C_PTP
+   PTP EscStpPos C_PTP
+   PTP AftpikPos C_PTP
+   PTP BefPikPos C_PTP
+END
+DEF FlushPallet()
+IF ActSid == 1 THEN
+   CountLeft = CountLeft + 1
+   PatCntLft = PatCntLft + 1
+   EopSckNoLft = CountLeft
+   IF PatCntLft >= 17 THEN
+      PatCntLft = 1
+   ENDIF
+   IF CountLeft >=SckPerPal THEN   
+;FOLD PULSE 7 '' State=TRUE CONT Time=2 sec;%{PE}%R 8.3.31,%MKUKATPBASIS,%COUT,%VPULSE,%P 2:1, 3:, 5:TRUE, 6:CONTINUE, 8:2
+CONTINUE
+PULSE($OUT[7], TRUE,2)
+;ENDFOLD
+      CountLeft = 1
+      PatCntLft = 1
+      TempForMoni = 0
+   ENDIF
+ENDIF
+IF ActSid == 2 THEN
+   CountRight = CountRight + 1
+   PatCntRgh = PatCntRgh + 1
+   EopSckNoRgh = CountRight
+   IF PatCntRgh >= 17 THEN
+      PatCntRgh = 1
+   ENDIF
+   IF CountRight >=SckPerPal THEN
+         ;FOLD PULSE 8 '' State=TRUE CONT Time=2 sec;%{PE}%R 8.3.31,%MKUKATPBASIS,%COUT,%VPULSE,%P 2:1, 3:, 5:TRUE, 6:CONTINUE, 8:2
+CONTINUE
+PULSE($OUT[8], TRUE,2)
+;ENDFOLD
+      CountRight = 1
+      PatCntRgh = 1
+      TempForMoni = 0
+   ENDIF
+ENDIF
+END
+DEF ResetCountLeft()
+   CountLeft = 1
+   PatCntLft = 1
+   TempForMoni = 0
+END
+DEF ResetCountRight()
+   CountRight = 1
+   PatCntRgh = 1
+   TempForMoni = 0
+END
+DEF DrpSck()
+;PusUp
+$OUT[3]=TRUE
+;OpnFin
+$OUT[1]=TRUE
+fSckRdy = FALSE
+
+END
+
+DEF InitRob()
+E6POS InitPos
+INTERRUPT ON 19
+INTERRUPT ON 20 
+$PAL_MODE=TRUE
+$TOOL = TOOL_DATA[1]
+$BASE = BASE_DATA[10]
+
+InitPos = $POS_ACT
+InitPos.Z = InitPos.Z + 5
+PTP InitPos C_PTP
+IF InitPos.Z < 890 THEN
+InitPos.Z = 890
+LIN InitPos
+ENDIF
+InitPos = PikUpLft
+InitPos.Z = 890
+PTP InitPos C_PTP
+$OUT[1]=TRUE ;OpenFinger
+$OUT[2]=TRUE ;OpenPlate
+$OUT[3]=TRUE ;PusherUP
+;InitPos = $POS_ACT
+;InitPos.X = InitPos.X + 100
+;LIN InitPos
+;InitPos.X = InitPos.X - 200
+;LIN InitPos
+;InitPos.X = InitPos.X + 100
+;LIN InitPos
+CountLeft = 1   
+CountRight = 1
+PatCntLft = 1
+PatCntRgh = 1
+$ADVANCE = 3
+$APO.CDIS = 200
+$APO.CPTP = 10
+
+$TOOL = TOOL_DATA[1]
+$BASE = BASE_DATA[10]
+
+PikPos = PikUpLft
+BefPikPos = PikPos
+BefPikPos.Z = BefPikPos.Z + BefPikHgh + 100
+AftPikPos = PikPos
+AftPikPos.Z = AftPikPos.Z + AftPikHgh + 100
+
+PTP BefPikPos C_PTP
+
+END

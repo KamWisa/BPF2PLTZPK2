@@ -1,0 +1,10 @@
+&ACCESS RVO2
+&REL 40
+&PARAM DISKPATH = KRC:\R1\Program\Palletize
+DEF VarGlobal ( )
+
+
+
+
+
+END

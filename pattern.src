@@ -1,0 +1,340 @@
+&ACCESS RVO1
+&REL 24
+DEF Pattern (SckNum:IN,CntNum:IN,TMR:IN)
+INT SckNum
+INT CntNum
+BOOL TMR
+DECL INT CountReal
+DECL INT SackCount
+DECL INT LoopCount
+DECL INT LevelCount
+
+CONTINUE
+;FOLD Sack Pikking Selection
+IF ActSid == 1 THEN
+   PikPos = PikUpLft
+   BefPikPos = PikPos
+   BefPikPos.Z = BefPikPos.Z + BefPikHgh
+   AftPikPos = PikPos
+   AftPikPos.Z = AftPikPos.Z + AftPikHgh
+ENDIF
+IF ActSid == 2 THEN
+   PikPos = PikUpRgh
+   BefPikPos = PikPos
+   BefPikPos.Z = BefPikPos.Z + BefPikHgh
+   AftPikPos = PikPos
+   AftPikPos.Z = AftPikPos.Z + AftPikHgh
+ENDIF
+;ENDFOLD
+;FOLD Drop Position Calculation
+CalLev(CntNum)
+IF ActSid == 1 THEN
+   IF TMR == FALSE THEN
+      DrpPos = MasterSackPos[1,SckNum]
+      DrpPos.X = DrpPos.X + SackTypeOffSetX[1,SckNum]
+      DrpPos.Y = DrpPos.Y + SackTypeOffSetY[1,SckNum]
+   ELSE
+      DrpPos = MasterSackPos[5,SckNum]
+      DrpPos.X = DrpPos.X + SackTypeOffSetX[5,SckNum]
+      DrpPos.Y = DrpPos.Y + SackTypeOffSetY[5,SckNum]
+   ENDIF
+   DrpPos.Z = BasHghLft + SckHgh[1]*LevCal + (PalHgh*INT_NoPalLef) + CenterSack
+ENDIF
+IF ActSid == 2 THEN
+   IF TMR == FALSE THEN
+      DrpPos = MasterSackPos[3,SckNum]
+      DrpPos.X = DrpPos.X + SackTypeOffSetX[3,SckNum]
+      DrpPos.Y = DrpPos.Y + SackTypeOffSetY[3,SckNum]      
+   ELSE
+      DrpPos = MasterSackPos[6,SckNum]
+      DrpPos.X = DrpPos.X + SackTypeOffSetX[6,SckNum]
+      DrpPos.Y = DrpPos.Y + SackTypeOffSetY[6,SckNum]
+   ENDIF
+   DrpPos.Z = BasHghRgh + SckHgh[3]*LevCal + (PalHgh*INT_NoPalRgh) + CenterSack 
+ENDIF
+;ENDFOLD
+;FOLD Before Drop Position Calculation
+BefDrpPos = DrpPos
+BefDrpPos.Z = BefDrpPos.Z + BefDrpDis
+;ENDFOLD
+;FOLD After Drop Position Calculation
+AftDrpPos = DrpPos
+AftDrpPos.Z = AftDrpPos.Z + AftDrpDis
+IF ((ActSid == 1) AND ((PatCntLft == 9) OR (PatCntLft == 10))) THEN
+   AftDrpPos.Y = AftDrpPos.Y + EscHitRob 
+ENDIF
+IF ((ActSid == 2) AND ((PatCntRgh == 11) OR (PatCntRgh == 12))) THEN
+   AftDrpPos.Y = AftDrpPos.Y - EscHitRob 
+ENDIF
+;ENDFOLD
+;FOLD Escape POS
+If ActSid == 1 THEN
+   EscStpPos = AftPikPos
+   IF EscStpPos.Z <= BefDrpPos.Z THEN
+      EscStpPos.Z = BefDrpPos.Z
+   ELSE
+      EscStpPos.Z = AftPikPos.Z
+   ENDIF
+   EscStpPos.X = EscStpPos.X + EscStpXLft
+   EscStpPos.Y = EscStpPos.Y + EscStpYLft
+
+   EscBltPos = EscStpPos
+   EscBltPos.X = EscBltPos.X + EscBelXLft
+   EscBltPos.Y = EscBltPos.Y + EscBelYLft
+ENDIF
+IF ActSid == 2 THEN
+   EscStpPos = AftPikPos
+   IF EscStpPos.Z <= BefDrpPos.Z THEN
+      EscStpPos.Z = BefDrpPos.Z
+   ELSE
+      EscStpPos.Z = AftPikPos.Z
+   ENDIF
+   EscStpPos.X = EscStpPos.X + EscStpXRgh
+   EscStpPos.Y = EscStpPos.Y + EscStpYRgh
+
+   EscBltPos = EscStpPos
+   EscBltPos.X = EscBltPos.X + EscBelXRgh 
+   EscBltPos.Y = EscBltPos.Y + EscBelYRgh 
+
+ENDIF 
+   
+;ENDFOLD
+END
+
+DEF CalLev(CntSck:IN)
+   INT CntSck
+   
+   CenterSack = 0
+   SWITCH CntSck
+      CASE 1
+         LevCal = 1
+      CASE 2
+         LevCal = 1
+      CASE 3
+         LevCal = 1
+      CASE 4
+         LevCal = 1
+      CASE 5
+         LevCal = 1
+      CASE 6
+         LevCal = 1
+      CASE 7
+         LevCal = 1
+         CenterSack = CenSckHgh
+      CASE 8
+         LevCal = 1
+         CenterSack = CenSckHgh
+         
+      CASE 9 
+         LevCal = 2
+      CASE 10
+         LevCal = 2
+      CASE 11
+         LevCal = 2
+      CASE 12
+         LevCal = 2
+      CASE 13
+         LevCal = 2
+      CASE 14
+         LevCal = 2
+      CASE 15
+         LevCal = 2
+         CenterSack = CenSckHgh
+      CASE 16
+         LevCal = 2
+         CenterSack = CenSckHgh      
+   
+      CASE 17
+         LevCal = 3
+      CASE 18
+         LevCal = 3 
+      CASE 19
+         LevCal = 3
+      CASE 20
+         LevCal = 3
+      CASE 21
+         LevCal = 3
+      CASE 22
+         LevCal = 3
+      CASE 23
+         LevCal = 3
+         CenterSack = CenSckHgh
+      CASE 24
+         LevCal = 3      
+         CenterSack = CenSckHgh
+         
+      CASE 25
+         LevCal = 4
+      CASE 26
+         LevCal = 4
+      CASE 27
+         LevCal = 4
+      CASE 28
+         LevCal = 4
+      CASE 29
+         LevCal = 4
+      CASE 30
+         LevCal = 4
+      CASE 31
+         LevCal = 4
+         CenterSack = CenSckHgh      
+      CASE 32
+         LevCal = 4     
+         CenterSack = CenSckHgh
+         
+      CASE 33
+         LevCal = 5 
+      CASE 34
+         LevCal = 5
+      CASE 35
+         LevCal = 5
+      CASE 36
+         LevCal = 5
+      CASE 37
+         LevCal = 5
+      CASE 38
+         LevCal = 5
+      CASE 39
+         LevCal = 5
+         CenterSack = CenSckHgh      
+      CASE 40
+         LevCal = 5      
+         CenterSack = CenSckHgh      
+   
+      CASE 41
+         LevCal = 6
+      CASE 42
+         LevCal = 6
+      CASE 43
+         LevCal = 6
+      CASE 44
+         LevCal = 6
+      CASE 45
+         LevCal = 6
+      CASE 46
+         LevCal = 6
+      CASE 47
+         LevCal = 6
+         CenterSack = CenSckHgh      
+      CASE 48
+         LevCal = 6      
+         CenterSack = CenSckHgh
+         
+      CASE 49
+         LevCal = 7
+      CASE 50
+         LevCal = 7
+      CASE 51
+         LevCal = 7
+      CASE 52
+         LevCal = 7
+      CASE 53
+         LevCal = 7
+      CASE 54
+         LevCal = 7
+      CASE 55
+         LevCal = 7
+         CenterSack = CenSckHgh      
+      CASE 56
+         LevCal = 7      
+         CenterSack = CenSckHgh      
+   
+      CASE 57
+         LevCal = 8
+      CASE 58
+         LevCal = 8
+      CASE 59
+         LevCal = 8
+      CASE 60
+         LevCal = 8
+      CASE 61
+         LevCal = 8
+      CASE 62
+         LevCal = 8
+      CASE 63
+         LevCal = 8
+         CenterSack = CenSckHgh      
+      CASE 64
+         LevCal = 8    
+         CenterSack = CenSckHgh
+   
+      CASE 65
+         LevCal = 9
+      CASE 66
+         LevCal = 9
+      CASE 67
+         LevCal = 9
+      CASE 68
+         LevCal = 9
+      CASE 69
+         LevCal = 9
+      CASE 70
+         LevCal = 9
+      CASE 71
+         LevCal = 9
+         CenterSack = CenSckHgh
+      CASE 72
+         LevCal = 9    
+         CenterSack = CenSckHgh
+         
+      CASE 73
+         LevCal = 10
+      CASE 74
+         LevCal = 10
+      CASE 75
+         LevCal = 10
+      CASE 76
+         LevCal = 10
+      CASE 77
+         LevCal = 10
+      CASE 78
+         LevCal = 10
+      CASE 79
+         LevCal = 10
+         CenterSack = CenSckHgh      
+      CASE 80
+         LevCal = 10      
+         CenterSack = CenSckHgh
+         
+      CASE 81
+         LevCal = 11
+      CASE 82
+         LevCal = 11
+      CASE 83
+         LevCal = 11
+      CASE 84
+         LevCal = 11
+      CASE 85
+         LevCal = 11
+      CASE 86
+         LevCal = 11
+      CASE 87
+         LevCal = 11
+         CenterSack = CenSckHgh
+      CASE 88
+         LevCal = 11      
+         CenterSack = CenSckHgh
+         
+      CASE 89
+         LevCal = 12 
+      CASE 90
+         LevCal = 12
+      CASE 91
+         LevCal = 12
+      CASE 92
+         LevCal = 12
+      CASE 93
+         LevCal = 12
+      CASE 94
+         LevCal = 12
+      CASE 95
+         LevCal = 12
+         CenterSack = CenSckHgh
+      CASE 96
+         LevCal = 12    
+         CenterSack = CenSckHgh
+   ENDSWITCH
+   
+   
+   
+   END

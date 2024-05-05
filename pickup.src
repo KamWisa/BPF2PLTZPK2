@@ -1,0 +1,26 @@
+&ACCESS RVP
+&REL 22
+&PARAM DISKPATH = KRC:\R1\Program\Palletize
+DEF  Pickup ( )
+   CONTINUE
+   PTP BefPikPos C_PTP
+   TRIGGER WHEN PATH=-35 DELAY= 0 DO ClsPlt() PRIO=81
+   TRIGGER WHEN PATH=-30 DELAY= 0 DO ClsGrp() PRIO=82
+   LIN PikPos
+   TRIGGER WHEN DISTANCE=0 DELAY=200 DO PusDow() PRIO=83
+   LIN AftPikPos C_DIS C_DIS
+   PTP EscStpPos C_PTP
+   PTP EscBltPos C_PTP  
+END
+
+DEF PusDow()
+$OUT[3]=FALSE
+END
+DEF ClsGrp()
+; Finger
+$OUT[1]=FALSE
+END
+DEF ClsPlt()
+; Plate
+$OUT[2]=FALSE
+END
